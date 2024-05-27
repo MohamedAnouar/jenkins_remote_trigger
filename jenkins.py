@@ -9,7 +9,7 @@ import argparse
 import logging
 
 QUEUE_POLL_INTERVAL = 2
-JOB_POLL_INTERVAL = 20
+JOB_POLL_INTERVAL = 10
 OVERALL_TIMEOUT = 3600  # 1 hour
 
 
