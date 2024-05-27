@@ -3,11 +3,8 @@
    This script only support user TOKEN as the password and not the actual user password
 """
 import requests
-import re
 import sys
-import json
 import time
-import os
 import argparse
 import logging
 
