@@ -35,6 +35,11 @@ def main(arguments):
         help="Jenkins full URL. example : http://localhost:8080",
         type=str)
     parser.add_argument(
+        '--tls-verify',
+        default = True,
+        help="Enable or disable TLS verification for HTTPS connections",
+        type=bool)
+    parser.add_argument(
         '-p',
         '--param',
         help=
@@ -61,7 +66,7 @@ def main(arguments):
     else:
         start_build_url = '{}/job/{}/build'.format(args.jenkins_url, job_name)
 
-    r = requests.post(start_build_url, auth=auth)
+    r = requests.post(start_build_url, auth=auth, verify=args.tls_verify)
 
     if r.status_code // 200 == 1:
         logging.info('Job "{}" was launched successfully'.format(job_name))
@@ -77,7 +82,7 @@ def main(arguments):
     logging.info('{} Job {} added to queue: {}'.format(time.ctime(), job_name,
                                                        job_info_url))
     while True:
-        l = requests.get(job_info_url, auth=auth)
+        l = requests.get(job_info_url, auth=auth, verify=args.tls_verify)
         jqe = l.json()
         task = jqe['task']['name']
         try:
@@ -99,7 +104,7 @@ def main(arguments):
     start_epoch = int(time.time())
     while True:
         logging.info("{}: Job started URL: {}".format(time.ctime(), job_url))
-        j = requests.get(job_url, auth=auth)
+        j = requests.get(job_url, auth=auth, verify=args.tls_verify)
         jje = j.json()
         result = jje['result']
         if result == 'SUCCESS':
