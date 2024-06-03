@@ -3,16 +3,13 @@
    This script only support user TOKEN as the password and not the actual user password
 """
 import requests
-import re
 import sys
-import json
 import time
-import os
 import argparse
 import logging
 
 QUEUE_POLL_INTERVAL = 2
-JOB_POLL_INTERVAL = 20
+JOB_POLL_INTERVAL = 10
 OVERALL_TIMEOUT = 3600  # 1 hour
 
 
@@ -34,6 +31,11 @@ def main(arguments):
         '--jenkins_url',
         help="Jenkins full URL. example : http://localhost:8080",
         type=str)
+    parser.add_argument(
+        '--tls-verify',
+        default = True,
+        help="Enable or disable TLS verification for HTTPS connections",
+        type=bool)
     parser.add_argument(
         '-p',
         '--param',
@@ -61,7 +63,7 @@ def main(arguments):
     else:
         start_build_url = '{}/job/{}/build'.format(args.jenkins_url, job_name)
 
-    r = requests.post(start_build_url, auth=auth)
+    r = requests.post(start_build_url, auth=auth, verify=args.tls_verify)
 
     if r.status_code // 200 == 1:
         logging.info('Job "{}" was launched successfully'.format(job_name))
@@ -77,13 +79,14 @@ def main(arguments):
     logging.info('{} Job {} added to queue: {}'.format(time.ctime(), job_name,
                                                        job_info_url))
     while True:
-        l = requests.get(job_info_url, auth=auth)
-        jqe = l.json()
+        job_info_request = requests.get(job_info_url, auth=auth, verify=args.tls_verify)
+        jqe = job_info_request.json()
         task = jqe['task']['name']
         try:
             job_id = jqe['executable']['number']
+            logging.info("job have been launched with the id: {}".format(job_id))
             break
-        except:
+        except Exception:
             logging.info("no job ID yet for build: {}".format(task))
             time.sleep(QUEUE_POLL_INTERVAL)
             elasped_time += QUEUE_POLL_INTERVAL
@@ -99,7 +102,7 @@ def main(arguments):
     start_epoch = int(time.time())
     while True:
         logging.info("{}: Job started URL: {}".format(time.ctime(), job_url))
-        j = requests.get(job_url, auth=auth)
+        j = requests.get(job_url, auth=auth, verify=args.tls_verify)
         jje = j.json()
         result = jje['result']
         if result == 'SUCCESS':
@@ -124,7 +127,7 @@ def main(arguments):
 
         cur_epoch = int(time.time())
         if (cur_epoch - start_epoch) > OVERALL_TIMEOUT:
-            logging.info("{}: No status before timeout of {} secs".format(
+            logging.info("No status before timeout of {} secs".format(
                 OVERALL_TIMEOUT))
             sys.exit(1)
 
